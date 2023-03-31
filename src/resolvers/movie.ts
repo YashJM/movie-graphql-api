@@ -1,4 +1,6 @@
+import { GraphQLError } from 'graphql';
 import { Context } from '../context/context';
+import { authorize } from '../utils/auth';
 
 export const movieResolver = {
     Query: {
@@ -14,38 +16,79 @@ export const movieResolver = {
     },
     Mutation: {
         createMovie: async (_parent: any, { data }: any, context: Context) => {
-            const { name, description, director, releaseDate } = data;
-            const movie = await context.prisma.movie.create({
-                data: {
-                    name,
-                    description,
-                    director,
-                    releaseDate,
-                },
-            });
+            try {
+                const { name, description, director, releaseDate } = data;
+                const userId = context.user?.id || -1;
 
-            return movie;
+                const movie = await context.prisma.movie.create({
+                    data: {
+                        name,
+                        description,
+                        director,
+                        releaseDate,
+                        user: { connect: { id: userId } },
+                    },
+                });
+
+                return movie;
+            } catch (error: any) {
+                throw new GraphQLError('Failed to create movie ', {
+                    extensions: { code: 'CREATE_MOVIE_ERROR' },
+                });
+            }
         },
         updateMovie: async (_parent: any, { id, data }: any, context: Context) => {
-            const updatedMovie = await context.prisma.movie.update({
-                where: {
-                    id: id,
-                },
-                data: {
-                    ...data
-                },
-            });
-            return updatedMovie;
+            try {
+                const userId = context.user?.id || -1;
+                const movie = await context.prisma.movie.findUnique({ where: { id } });
+
+                authorize(userId, movie!.createdBy);
+
+                const updatedMovie = await context.prisma.movie.update({
+                    where: {
+                        id: id,
+                    },
+                    data: {
+                        ...data
+                    },
+                });
+                return updatedMovie;
+            }
+            catch (error: any) {
+                if (error.extensions?.code === 'UNAUTHORIZED_ACCESS_ERROR') {
+                    throw error;
+                }
+                throw new GraphQLError('Failed to update movie ', {
+                    extensions: { code: 'UPDATE_MOVIE_ERROR' },
+                });
+            }
         },
         deleteMovie: async (_parent: any, data: { id: number }, context: Context) => {
-            const { id } = data;
-            await context.prisma.movie.delete({
-                where: {
-                    id: id,
-                },
-            });
+            try {
+                const { id } = data;
 
-            return { message: `Movie with ID ${id} has been successfully deleted` };
+                const userId = context.user?.id || -1;
+                const movie = await context.prisma.movie.findUnique({ where: { id } });
+
+                authorize(userId, movie!.createdBy);
+
+                await context.prisma.movie.delete({
+                    where: {
+                        id: id,
+                    },
+                });
+
+                return { message: `Movie with ID ${id} has been successfully deleted` };
+
+            }
+            catch (error: any) {
+                if (error.extensions?.code === 'UNAUTHORIZED_ACCESS_ERROR') {
+                    throw error;
+                }
+                throw new GraphQLError('Failed to update movie ', {
+                    extensions: { code: 'DELETE_MOVIE_ERROR' },
+                });
+            }
         }
     },
 };

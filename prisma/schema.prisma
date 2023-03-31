@@ -12,11 +12,13 @@ datasource db {
 
 model User {
   id       Int    @id @default(autoincrement())
-  name String @db.VarChar(255)
+  name     String @db.VarChar(255)
   email    String @unique @db.VarChar(255)
   password String
 
-  reviews   Review[]
+  reviews Review[]
+  movies  Movie[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -27,6 +29,9 @@ model Movie {
   description String? @db.Text
   director    String? @db.VarChar(255)
   releaseDate String? @db.VarChar(255)
+
+  user    User @relation(fields: [createdBy], references: [id])
+  createdBy Int
 
   reviews Review[]
 }

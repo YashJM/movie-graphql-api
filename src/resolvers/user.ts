@@ -46,7 +46,6 @@ export const userResolver = {
                 user: newUser
             }
         },
-
         login: async (_parent: any, { input }: { input: LoginUpInput }, context: Context) => {
             const { email, password } = input;
 
@@ -77,14 +76,6 @@ export const userResolver = {
             };
         },
         changePassword: async (_parent: any, { email, newPassword }: { email: string, newPassword: string }, context: Context) => {
-            if (!context.user) {
-                throw new GraphQLError('User is not authenticated', {
-                    extensions: {
-                        code: 'UNAUTHENTICATED',
-                        http: { status: 401 },
-                    },
-                });
-            }
             // Check if user exists
             const existingUser = await context.prisma.user.findUnique({ where: { email: email } });
 
