@@ -39,8 +39,14 @@ export const movieDefs = `#graphql
 	    query: String!
     }
 
+    input CreateMovieInput {
+        name: String!
+        description: String!
+        director: String
+        releaseDate: String
+    }
+
     input UpdateMovieInput {
-        id: Int!
         name: String
         description: String
         director: String
@@ -64,21 +70,23 @@ export const movieDefs = `#graphql
         node: Movie!
     }
 
+    type SuccessMessage {
+        message: String!
+    }
+
     type Query {
+        movie(id: Int!): Movie
         movies(
-        filter: MovieFilter
-        sort: [MovieSort!]
-        pagination: MoviePagination
-        search: MovieSearchInput
+            filter: MovieFilter
+            sort: [MovieSort!]
+            pagination: MoviePagination
+            search: MovieSearchInput
         ): MovieConnection!
     }
 
     type Mutation {
-        createMovie(
-        name: String!
-        description: String!
-        director: String!
-        releaseDate: String!
-        ): Movie!
+        createMovie(data: CreateMovieInput!): Movie!
+        updateMovie(id: Int!, data: UpdateMovieInput!): Movie!
+        deleteMovie(id: Int!): SuccessMessage!
     }
 `;
