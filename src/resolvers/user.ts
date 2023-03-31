@@ -6,7 +6,7 @@ import * as jwt from "jsonwebtoken";
 import { Context } from '../context/context';
 
 interface SignUpInput {
-    userName: string
+    name: string
     email: string
     password: string
 }
@@ -18,13 +18,13 @@ interface LoginUpInput {
 
 export const userResolver = {
     Query: {
-        users: () => {
-            return [];
+        users: (_parent: any, _args: any, context: Context) => {
+            return context.prisma.user.findMany();
         },
     },
     Mutation: {
         signup: async (_parent: any, { input }: { input: SignUpInput }, context: Context) => {
-            const { email, userName, password } = input;
+            const { email, name, password } = input;
 
             const existingUser = await context.prisma.user.findUnique({ where: { email: email } });
 
@@ -33,7 +33,7 @@ export const userResolver = {
             }
 
             const hashedPassword = await bcrypt.hash(password, 10);
-            const newUser = await context.prisma.user.create({ data: { email, userName, password: hashedPassword } });
+            const newUser = await context.prisma.user.create({ data: { email, name, password: hashedPassword } });
 
             const token = jwt.sign(
                 { id: newUser.id, email: email },
@@ -75,6 +75,28 @@ export const userResolver = {
                 token,
                 user,
             };
+        },
+        changePassword: async (_parent: any, { email, newPassword }: { email: string, newPassword: string }, context: Context) => {
+            if (!context.user) {
+                throw new GraphQLError('User is not authenticated', {
+                    extensions: {
+                        code: 'UNAUTHENTICATED',
+                        http: { status: 401 },
+                    },
+                });
+            }
+            // Check if user exists
+            const existingUser = await context.prisma.user.findUnique({ where: { email: email } });
+
+            if (!existingUser) {
+                throw new GraphQLError('User with this email does not exist', { extensions: { code: ApolloServerErrorCode.BAD_USER_INPUT } });
+            }
+
+            // Update password
+            const hashedPassword = await bcrypt.hash(newPassword, 10);
+            const updatedUser = await context.prisma.user.update({ where: { email: email }, data: { password: hashedPassword } });
+
+            return updatedUser;
         }
     },
 };
