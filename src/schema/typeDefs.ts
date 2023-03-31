@@ -1,13 +1,13 @@
 export const typeDefs = `#graphql
     type User {
         id: Int
-        userName: String
+        name: String
         email: String
         password: String
     }
 
     input SignUpInput {
-        userName: String!
+        name: String!
         email: String!
         password: String!
     }
@@ -17,26 +17,23 @@ export const typeDefs = `#graphql
         password: String!
     }
 
+    input PasswordUpdateInput {
+        email: String!
+        newPassword: String!
+    }
+
     type AuthPayload {
         token: String
         user: User
     }
 
-    type Movie {
-        id: Int
-        name: String!
-        description: String
-        director: String
-        releaseDate: String
-    }
-
     type Query {
         users: [User],
-        movies: [Movie]
     }
 
     type Mutation {
         signup(input: SignUpInput): AuthPayload
         login(input: LogInInput): AuthPayload
+        changePassword(input: PasswordUpdateInput): User
     }
 `;

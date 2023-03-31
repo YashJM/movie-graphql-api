@@ -1,9 +1,11 @@
 -- CreateTable
 CREATE TABLE "User" (
     "id" SERIAL NOT NULL,
-    "userName" VARCHAR(255) NOT NULL,
+    "name" VARCHAR(255) NOT NULL,
     "email" VARCHAR(255) NOT NULL,
     "password" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "User_pkey" PRIMARY KEY ("id")
 );
@@ -12,7 +14,7 @@ CREATE TABLE "User" (
 CREATE TABLE "Movie" (
     "id" SERIAL NOT NULL,
     "name" VARCHAR(255) NOT NULL,
-    "description" VARCHAR(255),
+    "description" TEXT,
     "director" VARCHAR(255),
     "releaseDate" VARCHAR(255),
 
