@@ -26,7 +26,7 @@ export const createContext = async ({ req }: any): Promise<Context> => {
   }
 
   // Allow anonymous access to sign up and login
-  if (req && req.body && req.body.operationName) {            
+  if (req && req.body && req.body.operationName) {
     if (['signup', 'login'].includes(req.body.operationName.toLowerCase())) {
       return { prisma, user };
     }

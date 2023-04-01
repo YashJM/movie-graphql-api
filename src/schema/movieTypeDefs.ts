@@ -7,8 +7,6 @@ export const movieTypeDefs = `#graphql
         releaseDate: String!
     }
 
-    # CRUD MOVIE INPUTS
-
     input CreateMovieInput {
         name: String!
         description: String!
@@ -23,7 +21,7 @@ export const movieTypeDefs = `#graphql
         releaseDate: String
     }
 
-    # MOVIE PAGINATION 
+    # PAGINATION 
 
     enum SortOrder {
         asc

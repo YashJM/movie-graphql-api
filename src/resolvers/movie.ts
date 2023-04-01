@@ -1,6 +1,8 @@
 import { GraphQLError } from 'graphql';
+
 import { Context } from '../context/context';
 import { authorize } from '../utils/auth';
+import { CreateMovieInput } from '../common/types';
 
 export const movieResolver = {
     Query: {
@@ -50,7 +52,7 @@ export const movieResolver = {
         },
     },
     Mutation: {
-        createMovie: async (_parent: any, { data }: any, context: Context) => {
+        createMovie: async (_parent: any, { data }: { data: CreateMovieInput }, context: Context) => {
             try {
                 const { name, description, director, releaseDate } = data;
                 const userId = context.user?.id || -1;

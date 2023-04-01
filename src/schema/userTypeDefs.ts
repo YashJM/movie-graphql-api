@@ -3,7 +3,10 @@ export const userTypeDefs = `#graphql
         id: Int
         name: String
         email: String
-        password: String
+    }
+
+    type SuccessMessage {
+        message: String!
     }
 
     input SignUpInput {
@@ -29,7 +32,7 @@ export const userTypeDefs = `#graphql
 
     type Mutation {
         signup(input: SignUpInput): AuthPayload
-        login(input: LogInInput): AuthPayload
-        changePassword(input: PasswordUpdateInput): User
+        login(input: LogInInput): AuthPayload!
+        changePassword(input: PasswordUpdateInput): SuccessMessage
     }
 `;

@@ -9,7 +9,6 @@ import { userResolver } from './resolvers/user';
 import { movieResolver } from './resolvers/movie';
 import { reviewResolver } from './resolvers/review';
 
-
 import { createContext } from './context/context';
 
 (async () => {
