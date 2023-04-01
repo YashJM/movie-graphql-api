@@ -11,7 +11,42 @@ export const movieResolver = {
             return movie;
         },
         movies: async (_parent: any, { filter, sort, pagination, search }: any, context: Context) => {
-            // console.log(filter, sort, pagination, search);
+            let where = {};
+
+            if (filter) {
+                where = { ...where, ...filter };
+            }
+
+            if (search) {
+                where = {
+                    ...where,
+                    OR: [
+                        { name: { contains: search, mode: "insensitive" } },
+                        { description: { contains: search, mode: "insensitive" } },
+                    ],
+                };
+            }
+
+            let orderBy = {};
+            if (sort) {
+                orderBy = { [sort.field]: sort.order };
+            }
+
+            let skip = 0;
+            let take = 10;
+            if (pagination) {
+                skip = pagination.skip || skip;
+                take = pagination.take || take;
+            }
+
+            const movies = await context.prisma.movie.findMany({
+                where,
+                orderBy,
+                skip,
+                take,
+            });
+
+            return movies;
         },
     },
     Mutation: {
@@ -32,7 +67,7 @@ export const movieResolver = {
 
                 return movie;
             } catch (error: any) {
-                throw new GraphQLError('Failed to create movie ', {
+                throw new GraphQLError('Failed to create movie.', {
                     extensions: { code: 'CREATE_MOVIE_ERROR' },
                 });
             }
@@ -58,7 +93,7 @@ export const movieResolver = {
                 if (error.extensions?.code === 'UNAUTHORIZED_ACCESS_ERROR') {
                     throw error;
                 }
-                throw new GraphQLError('Failed to update movie ', {
+                throw new GraphQLError('Failed to update movie.', {
                     extensions: { code: 'UPDATE_MOVIE_ERROR' },
                 });
             }
@@ -66,10 +101,14 @@ export const movieResolver = {
         deleteMovie: async (_parent: any, data: { id: number }, context: Context) => {
             try {
                 const { id } = data;
-
                 const userId = context.user?.id || -1;
                 const movie = await context.prisma.movie.findUnique({ where: { id } });
 
+                if (!movie) {
+                    throw new GraphQLError(`Movie with ID ${id} not found. Nothing to delete.`, {
+                        extensions: { code: 'MOVIE_NOT_FOUND_ERROR' },
+                    });
+                }
                 authorize(userId, movie!.createdBy);
 
                 await context.prisma.movie.delete({
@@ -78,14 +117,15 @@ export const movieResolver = {
                     },
                 });
 
-                return { message: `Movie with ID ${id} has been successfully deleted` };
-
+                return { message: `Movie with ID ${id} has been successfully deleted.` };
             }
             catch (error: any) {
-                if (error.extensions?.code === 'UNAUTHORIZED_ACCESS_ERROR') {
+                if (error.extensions?.code === 'UNAUTHORIZED_ACCESS_ERROR' ||
+                    error.extensions?.code === 'MOVIE_NOT_FOUND_ERROR'
+                ) {
                     throw error;
                 }
-                throw new GraphQLError('Failed to update movie ', {
+                throw new GraphQLError('Failed to delete movie.', {
                     extensions: { code: 'DELETE_MOVIE_ERROR' },
                 });
             }

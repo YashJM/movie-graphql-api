@@ -1,4 +1,4 @@
-export const movieDefs = `#graphql
+export const movieTypeDefs = `#graphql
     type Movie {
         id: Int!
         name: String!
@@ -7,37 +7,7 @@ export const movieDefs = `#graphql
         releaseDate: String!
     }
 
-    input MovieFilter {
-        OR: [MovieFilter!]
-        name_contains: String
-        description_contains: String
-        director_contains: String
-    }
-
-    enum MovieSortField {
-        name
-        director
-        releaseDate
-    }
-
-    enum SortOrder {
-        asc
-        desc
-    }
-
-    input MovieSort {
-        field: MovieSortField!
-        order: SortOrder!
-    }
-
-    input MoviePagination {
-        first: Int!
-        skip: Int!
-    }
-
-    input MovieSearchInput {
-	    query: String!
-    }
+    # CRUD MOVIE INPUTS
 
     input CreateMovieInput {
         name: String!
@@ -53,21 +23,32 @@ export const movieDefs = `#graphql
         releaseDate: String
     }
 
-    type MovieConnection {
-        pageInfo: PageInfo!
-        edges: [MovieEdge!]!
+    # MOVIE PAGINATION 
+
+    enum SortOrder {
+        asc
+        desc
     }
 
-    type PageInfo {
-        hasNextPage: Boolean!
-        hasPreviousPage: Boolean!
-        startCursor: String
-        endCursor: String
+    input MovieFilter {
+        name: String
+        year: Int
+        director: String
     }
 
-    type MovieEdge {
-        cursor: String!
-        node: Movie!
+    input MovieSort {
+        field: String
+        order: SortOrder
+    }
+
+    input PaginationInput {
+        skip: Int
+        take: Int
+    }
+
+    type MovieList {
+        movies: [Movie!]
+        totalCount: Int
     }
 
     type SuccessMessage {
@@ -76,17 +57,12 @@ export const movieDefs = `#graphql
 
     type Query {
         movie(id: Int!): Movie
-        movies(
-            filter: MovieFilter
-            sort: [MovieSort!]
-            pagination: MoviePagination
-            search: MovieSearchInput
-        ): MovieConnection!
+        movies( filter: MovieFilter, sort: MovieSort, pagination: PaginationInput, search: String): [Movie!]
     }
 
     type Mutation {
         createMovie(data: CreateMovieInput!): Movie!
-        updateMovie(id: Int!, data: UpdateMovieInput!): Movie!
+        updateMovie(id: Int!, data: UpdateMovieInput): Movie!
         deleteMovie(id: Int!): SuccessMessage!
     }
 `;

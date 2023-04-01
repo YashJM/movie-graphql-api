@@ -1,4 +1,4 @@
-export const typeDefs = `#graphql
+export const userTypeDefs = `#graphql
     type User {
         id: Int
         name: String
@@ -25,10 +25,6 @@ export const typeDefs = `#graphql
     type AuthPayload {
         token: String
         user: User
-    }
-
-    type Query {
-        users: [User],
     }
 
     type Mutation {
