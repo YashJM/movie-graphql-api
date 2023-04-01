@@ -1,18 +1,21 @@
 import { ApolloServer } from '@apollo/server';
 import { startStandaloneServer } from '@apollo/server/standalone';
 
+import { userTypeDefs } from './schema/userTypeDefs';
+import { movieTypeDefs } from './schema/movieTypeDefs';
+import { reviewTypeDefs } from './schema/reviewTypeDefs';
+
 import { userResolver } from './resolvers/user';
 import { movieResolver } from './resolvers/movie';
+import { reviewResolver } from './resolvers/review';
 
-import { typeDefs } from './schema/typeDefs';
-import { movieDefs } from './schema/movieTypeDefs';
 
 import { createContext } from './context/context';
 
 (async () => {
     const server = new ApolloServer({
-        typeDefs: [typeDefs, movieDefs],
-        resolvers: [userResolver, movieResolver],
+        typeDefs: [userTypeDefs, movieTypeDefs, reviewTypeDefs],
+        resolvers: [userResolver, movieResolver, reviewResolver],
     });
 
     const { url } = await startStandaloneServer(server, {

@@ -4,6 +4,7 @@ import * as bcrypt from "bcryptjs";
 import * as jwt from "jsonwebtoken";
 
 import { Context } from '../context/context';
+import { authorize } from '../utils/auth';
 
 interface SignUpInput {
     name: string
@@ -17,11 +18,6 @@ interface LoginUpInput {
 }
 
 export const userResolver = {
-    Query: {
-        users: (_parent: any, _args: any, context: Context) => {
-            return context.prisma.user.findMany();
-        },
-    },
     Mutation: {
         signup: async (_parent: any, { input }: { input: SignUpInput }, context: Context) => {
             const { email, name, password } = input;
@@ -75,19 +71,35 @@ export const userResolver = {
                 user,
             };
         },
-        changePassword: async (_parent: any, { email, newPassword }: { email: string, newPassword: string }, context: Context) => {
+        changePassword: async (_parent: any, { input }: { input: { email: string, newPassword: string } }, context: Context) => {
             // Check if user exists
-            const existingUser = await context.prisma.user.findUnique({ where: { email: email } });
+            const { email, newPassword } = input;
 
-            if (!existingUser) {
-                throw new GraphQLError('User with this email does not exist', { extensions: { code: ApolloServerErrorCode.BAD_USER_INPUT } });
+            try {
+                const existingUser = await context.prisma.user.findUnique({ where: { email: email } });
+                const userId = context.user?.id || -1;
+
+                if (!existingUser) {
+                    throw new GraphQLError('User with this email does not exist', { extensions: { code: ApolloServerErrorCode.BAD_USER_INPUT } });
+                }
+
+                authorize(userId, existingUser.id);
+
+                // Update password
+                const hashedPassword = await bcrypt.hash(newPassword, 10);
+                const updatedUser = await context.prisma.user.update({ where: { email: email }, data: { password: hashedPassword } });
+
+                return updatedUser;
+
             }
-
-            // Update password
-            const hashedPassword = await bcrypt.hash(newPassword, 10);
-            const updatedUser = await context.prisma.user.update({ where: { email: email }, data: { password: hashedPassword } });
-
-            return updatedUser;
+            catch (error: any) {
+                if (error.extensions?.code === 'UNAUTHORIZED_ACCESS_ERROR') {
+                    throw error;
+                }
+                throw new GraphQLError('Failed to update movie ', {
+                    extensions: { code: 'UPDATE_PASSWORD_ERROR' },
+                });
+            }
         }
     },
 };

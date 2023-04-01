@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import { GraphQLError } from 'graphql';
+
 import { decodeAuthHeader, AuthTokenPayload } from '../utils/auth';
 
 export interface Context {
