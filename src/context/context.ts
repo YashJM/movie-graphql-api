@@ -13,10 +13,13 @@ const prisma = new PrismaClient();
 export const createContext = async ({ req }: any): Promise<Context> => {
   let user: AuthTokenPayload | null = null;
 
-  if (req && req.headers.authorization && req.body.operationName !== 'IntrospectionQuery') {
+  // handling Mutations with custom operation name
+  const isAllowed = req.body.query.includes('signup') || req.body.query.includes('login');
+  
+  if (req && req.headers.authorization && req.body.operationName !== 'IntrospectionQuery' && !isAllowed) {
     try {
       user = decodeAuthHeader(req.headers.authorization);
-    } catch (err) {
+    } catch (err) {      
       throw new GraphQLError('Invalid or expired authentication token.', {
         extensions: {
           code: 'UNAUTHENTICATED',
@@ -33,7 +36,7 @@ export const createContext = async ({ req }: any): Promise<Context> => {
   }
 
   // Check if user is authenticated for all other mutations
-  if (req && req.body && req.body.operationName) {
+  if (req && req.body && req.body.operationName && !isAllowed) {
     if (req.body.operationName.toLowerCase() === 'mutation' && !user) {
 
       throw new GraphQLError('User is not authenticated', {
