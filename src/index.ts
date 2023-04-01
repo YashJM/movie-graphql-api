@@ -17,8 +17,10 @@ import { createContext } from './context/context';
         resolvers: [userResolver, movieResolver, reviewResolver],
     });
 
+    const port = Number.parseInt(process.env.PORT as any) || 4000;
+
     const { url } = await startStandaloneServer(server, {
-        listen: { port: 4000 },
+        listen: { port: port },
         context: createContext,
     });
 
