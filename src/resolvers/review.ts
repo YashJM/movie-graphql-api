@@ -1,6 +1,7 @@
 import { GraphQLError } from 'graphql';
 import { Context } from '../context/context';
 import { authorize } from '../utils/auth';
+import { CreateReviewInput } from '../common/types';
 
 export const reviewResolver = {
     Query: {
@@ -70,7 +71,7 @@ export const reviewResolver = {
         },
     },
     Mutation: {
-        createReview: async (_parent: any, { data }: any, context: Context) => {
+        createReview: async (_parent: any, { data }: { data: CreateReviewInput }, context: Context) => {
             try {
                 const { movieId, rating, comment } = data;
                 const userId = context.user?.id || -1;
@@ -100,7 +101,7 @@ export const reviewResolver = {
                 });
             }
         },
-        updateReview: async (_parent: any, { id, data }: any, context: Context) => {
+        updateReview: async (_parent: any, { id, data }: { id: number, data: any }, context: Context) => {
             try {
                 const userId = context.user?.id || -1;
                 const review = await context.prisma.review.findUnique({ where: { id } });

@@ -1,75 +1,86 @@
+import * as bcrypt from 'bcryptjs';
+import * as jwt from 'jsonwebtoken';
 import { GraphQLError } from 'graphql';
 import { ApolloServerErrorCode } from '@apollo/server/errors';
-import * as bcrypt from "bcryptjs";
-import * as jwt from "jsonwebtoken";
 
 import { Context } from '../context/context';
 import { authorize } from '../utils/auth';
-
-interface SignUpInput {
-    name: string
-    email: string
-    password: string
-}
-
-interface LoginUpInput {
-    email: string
-    password: string
-}
+import { validateSignUpInput } from '../utils/validations';
+import { SignUpInput, LoginUpInput } from '../common/types';
 
 export const userResolver = {
     Mutation: {
         signup: async (_parent: any, { input }: { input: SignUpInput }, context: Context) => {
-            const { email, name, password } = input;
+            try {
+                const { email, name, password } = input;
 
-            const existingUser = await context.prisma.user.findUnique({ where: { email: email } });
+                const existingUser = await context.prisma.user.findUnique({ where: { email: email } });
 
-            if (existingUser) {
-                throw new GraphQLError('User with this email address already exists', { extensions: { code: ApolloServerErrorCode.BAD_USER_INPUT } });
+                if (existingUser) {
+                    throw new GraphQLError('User with this email address already exists', { extensions: { code: ApolloServerErrorCode.BAD_USER_INPUT } });
+                }
+
+                validateSignUpInput(email, password);
+
+                const hashedPassword = await bcrypt.hash(password, 10);
+                const newUser = await context.prisma.user.create({ data: { email, name, password: hashedPassword } });
+
+                const token = jwt.sign(
+                    { id: newUser.id, email: email },
+                    process.env.JWT_SECRET || 'fallback_secret' as jwt.Secret,
+                    { expiresIn: process.env.TOKEN_EXPIRY_TIME }
+                );
+
+                return {
+                    token: token,
+                    user: newUser
+                }
             }
-
-            const hashedPassword = await bcrypt.hash(password, 10);
-            const newUser = await context.prisma.user.create({ data: { email, name, password: hashedPassword } });
-
-            const token = jwt.sign(
-                { id: newUser.id, email: email },
-                process.env.JWT_SECRET || 'fallback_secret' as jwt.Secret,
-                { expiresIn: process.env.TOKEN_EXPIRY_TIME }
-            );
-
-            return {
-                token: token,
-                user: newUser
+            catch (error: any) {
+                if (error.extensions?.code === 'INPUT_VALIDATION_ERROR') {
+                    throw error;
+                }
+                throw new GraphQLError('Failed to sign up.', {
+                    extensions: { code: 'SIGNUP_ERROR' },
+                });
             }
         },
         login: async (_parent: any, { input }: { input: LoginUpInput }, context: Context) => {
-            const { email, password } = input;
+            try {
+                const { email, password } = input;
 
-            const user = await context.prisma.user.findUnique({
-                where: { email: email },
-            });
+                const user = await context.prisma.user.findUnique({
+                    where: { email: email },
+                });
 
-            if (!user) {
-                throw new GraphQLError('User with this email does not exists', { extensions: { code: ApolloServerErrorCode.BAD_USER_INPUT } });
+                if (!user) {
+                    throw new GraphQLError('User with this email does not exists', { extensions: { code: ApolloServerErrorCode.BAD_USER_INPUT } });
+                }
+
+                const valid = await bcrypt.compare(
+                    password,
+                    user.password,
+                );
+
+                if (!valid) {
+                    throw new GraphQLError('Invalid password', { extensions: { code: ApolloServerErrorCode.BAD_USER_INPUT } });
+                }
+
+                const token = jwt.sign({ id: user.id, email: email },
+                    process.env.JWT_SECRET || 'fallback_secret' as jwt.Secret,
+                    { expiresIn: process.env.TOKEN_EXPIRY_TIME });
+
+                return {
+                    token,
+                    user,
+                };
+
             }
-
-            const valid = await bcrypt.compare(
-                password,
-                user.password,
-            );
-
-            if (!valid) {
-                throw new GraphQLError('Invalid password', { extensions: { code: ApolloServerErrorCode.BAD_USER_INPUT } });
+            catch (error) {
+                throw new GraphQLError('Login Error.', {
+                    extensions: { code: 'LOGIN_ERROR' },
+                });
             }
-
-            const token = jwt.sign({ id: user.id, email: email },
-                process.env.JWT_SECRET || 'fallback_secret' as jwt.Secret,
-                { expiresIn: process.env.TOKEN_EXPIRY_TIME });
-
-            return {
-                token,
-                user,
-            };
         },
         changePassword: async (_parent: any, { input }: { input: { email: string, newPassword: string } }, context: Context) => {
             // Check if user exists
@@ -87,10 +98,9 @@ export const userResolver = {
 
                 // Update password
                 const hashedPassword = await bcrypt.hash(newPassword, 10);
-                const updatedUser = await context.prisma.user.update({ where: { email: email }, data: { password: hashedPassword } });
+                await context.prisma.user.update({ where: { email: email }, data: { password: hashedPassword } });
 
-                return updatedUser;
-
+                return { message: `Password has been successfully changed.` };
             }
             catch (error: any) {
                 if (error.extensions?.code === 'UNAUTHORIZED_ACCESS_ERROR') {

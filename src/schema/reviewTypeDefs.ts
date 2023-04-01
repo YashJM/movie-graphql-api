@@ -19,7 +19,7 @@ export const reviewTypeDefs = `#graphql
         comment: String
     }
 
-    # REVIEW PAGINATION
+    # PAGINATION
 
     enum SortOrder {
         asc
