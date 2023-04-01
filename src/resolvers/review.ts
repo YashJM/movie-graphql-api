@@ -3,6 +3,72 @@ import { Context } from '../context/context';
 import { authorize } from '../utils/auth';
 
 export const reviewResolver = {
+    Query: {
+        review: async (_parent: any, { id }: { id: number }, context: Context) => {
+            const review = await context.prisma.review.findUnique({
+                where: { id: id },
+            });
+            return review;
+        },
+        movieReviews: async (_parent: any, { movieId, filter, sort, pagination }: any, context: Context) => {
+            try {
+                let where = {
+                    movieId
+                };
+
+                const user = context.user;
+
+                if (filter) {
+                    where = { ...where, ...filter };
+                }
+
+                let orderBy = {};
+                if (sort) {
+                    orderBy = { [sort.field]: sort.order };
+                }
+
+                let skip;
+                let take;
+                if (pagination) {
+                    skip = pagination.skip || skip;
+                    take = pagination.take || take;
+                }
+
+                let userReviews = [] as any;
+                let otherReviews = [] as any;
+
+                if (user) {
+                    userReviews = await context.prisma.review.findMany({
+                        where: { ...where, userId: user.id },
+                        orderBy,
+                    });
+
+                    otherReviews = await context.prisma.review.findMany({
+                        where: { ...where, NOT: { userId: user.id } },
+                        orderBy,
+                    });
+                } else {
+                    otherReviews = await context.prisma.review.findMany({
+                        where,
+                        orderBy,
+                    });
+                }
+
+                let reviews = [...userReviews, ...otherReviews];
+
+                if (take) {
+                    reviews = reviews.slice(skip, skip + take);
+                }
+
+                return reviews;
+            }
+            catch (error) {
+                throw new GraphQLError('Failed to fetch reviews.', {
+                    extensions: { code: 'FETCH_VIEWS_ERROR' },
+                });
+            }
+        },
+    },
     Mutation: {
         createReview: async (_parent: any, { data }: any, context: Context) => {
             try {

@@ -26,7 +26,7 @@ export const createContext = async ({ req }: any): Promise<Context> => {
   }
 
   // Allow anonymous access to sign up and login
-  if (req && req.body && req.body.operationName) {
+  if (req && req.body && req.body.operationName) {            
     if (['signup', 'login'].includes(req.body.operationName.toLowerCase())) {
       return { prisma, user };
     }
@@ -35,6 +35,7 @@ export const createContext = async ({ req }: any): Promise<Context> => {
   // Check if user is authenticated for all other mutations
   if (req && req.body && req.body.operationName) {
     if (req.body.operationName.toLowerCase() === 'mutation' && !user) {
+
       throw new GraphQLError('User is not authenticated', {
         extensions: {
           code: 'UNAUTHENTICATED',

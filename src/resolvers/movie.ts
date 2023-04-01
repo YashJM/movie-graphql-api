@@ -32,8 +32,8 @@ export const movieResolver = {
                 orderBy = { [sort.field]: sort.order };
             }
 
-            let skip = 0;
-            let take = 10;
+            let skip;
+            let take;
             if (pagination) {
                 skip = pagination.skip || skip;
                 take = pagination.take || take;
