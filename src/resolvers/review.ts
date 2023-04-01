@@ -3,6 +3,47 @@ import { Context } from '../context/context';
 import { authorize } from '../utils/auth';
 
 export const reviewResolver = {
+    Query: {
+        movieReviews: async (_parent: any, { movieId, filter, sort, pagination }: any, context: Context) => {
+            try {
+                let where = {
+                    movieId
+                };
+                
+                const user = context.user;
+
+                if (filter) {
+                    where = { ...filter };
+                }
+
+                let orderBy = {};
+                if (sort) {
+                    orderBy = { [sort.field]: sort.order };
+                }
+
+                let skip;
+                let take;
+                if (pagination) {
+                    skip = pagination.skip || skip;
+                    take = pagination.take || take;
+                }
+
+                const reviews = await context.prisma.review.findMany({
+                    where,
+                    orderBy,
+                    skip,
+                    take,
+                });
+
+                return reviews;
+            }
+            catch (error) {
+                throw new GraphQLError('Failed to fetch reviews.', {
+                    extensions: { code: 'FETCH_VIEWS_ERROR' },
+                });
+            }
+        },
+    },
     Mutation: {
         createReview: async (_parent: any, { data }: any, context: Context) => {
             try {

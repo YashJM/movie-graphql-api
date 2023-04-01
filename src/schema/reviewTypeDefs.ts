@@ -48,12 +48,12 @@ export const reviewTypeDefs = `#graphql
     
     type Query {
         review(id: Int!): Review
-        reviews(filter: ReviewFilter, sort: ReviewSort, pagination: PaginationInput): [Review!]
+        movieReviews( movieId: Int!, filter: MovieFilter, sort: MovieSort, pagination: PaginationInput): [Review!]
     }
 
     type Mutation {
-        createReview(data: CreateReviewInput!): Review!,
-        updateReview(id: Int!, data: UpdateReviewInput): Review!
+        createReview(data: CreateReviewInput!): Review,
+        updateReview(id: Int!, data: UpdateReviewInput): Review
         deleteReview(id: Int!): SuccessMessage!
     }
 `;
