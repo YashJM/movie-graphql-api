@@ -79,6 +79,12 @@ export const movieResolver = {
                 const userId = context.user?.id || -1;
                 const movie = await context.prisma.movie.findUnique({ where: { id } });
 
+                if (!movie) {
+                    throw new GraphQLError(`Movie with ID ${id} not found. Nothing to update.`, {
+                        extensions: { code: 'MOVIE_NOT_FOUND_ERROR' },
+                    });
+                }
+
                 authorize(userId, movie!.createdBy);
 
                 const updatedMovie = await context.prisma.movie.update({
@@ -92,7 +98,9 @@ export const movieResolver = {
                 return updatedMovie;
             }
             catch (error: any) {
-                if (error.extensions?.code === 'UNAUTHORIZED_ACCESS_ERROR') {
+                if (error.extensions?.code === 'UNAUTHORIZED_ACCESS_ERROR' ||
+                    error.extensions?.code === 'MOVIE_NOT_FOUND_ERROR'
+                ) {
                     throw error;
                 }
                 throw new GraphQLError('Failed to update movie.', {

@@ -107,7 +107,7 @@ export const reviewResolver = {
                 const review = await context.prisma.review.findUnique({ where: { id } });
 
                 if (!review) {
-                    throw new GraphQLError(`Review with ID ${id} not found. Nothing to delete.`, {
+                    throw new GraphQLError(`Review with ID ${id} not found. Nothing to update.`, {
                         extensions: { code: 'REVIEW_NOT_FOUND_ERROR' },
                     });
                 }
@@ -141,12 +141,15 @@ export const reviewResolver = {
                 const { id } = data;
                 const userId = context.user?.id || -1;
                 const review = await context.prisma.review.findUnique({ where: { id } });
-                authorize(userId, review!.userId);
+
                 if (!review) {
                     throw new GraphQLError(`Review with ID ${id} not found. Nothing to delete.`, {
-                        extensions: { code: 'DELETE_REVIEW_ERROR' },
+                        extensions: { code: 'REVIEW_NOT_FOUND_ERROR' },
                     });
                 }
+
+                authorize(userId, review!.userId);
+
                 await context.prisma.review.delete({
                     where: {
                         id: id,
@@ -155,7 +158,9 @@ export const reviewResolver = {
                 return { message: `REview with ID ${id} has been successfully deleted.` };
             }
             catch (error: any) {
-                if (error.extensions?.code === 'UNAUTHORIZED_ACCESS_ERROR') {
+                if (error.extensions?.code === 'UNAUTHORIZED_ACCESS_ERROR' ||
+                    error.extensions?.code === 'REVIEW_NOT_FOUND_ERROR'
+                ) {
                     throw error;
                 }
                 throw new GraphQLError('Failed to update movie ', {
