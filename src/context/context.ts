@@ -13,7 +13,7 @@ const prisma = new PrismaClient();
 export const createContext = async ({ req }: any): Promise<Context> => {
   let user: AuthTokenPayload | null = null;
 
-  if (req && req.headers.authorization) {
+  if (req && req.headers.authorization && req.body.operationName !== 'IntrospectionQuery') {
     try {
       user = decodeAuthHeader(req.headers.authorization);
     } catch (err) {
