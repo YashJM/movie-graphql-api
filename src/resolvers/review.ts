@@ -4,6 +4,12 @@ import { authorize } from '../utils/auth';
 
 export const reviewResolver = {
     Query: {
+        review: async (_parent: any, { id }: { id: number }, context: Context) => {
+            const review = await context.prisma.review.findUnique({
+                where: { id: id },
+            });
+            return review;
+        },
         movieReviews: async (_parent: any, { movieId, filter, sort, pagination }: any, context: Context) => {
             try {
                 let where = {
@@ -40,23 +46,20 @@ export const reviewResolver = {
                     otherReviews = await context.prisma.review.findMany({
                         where: { ...where, NOT: { userId: user.id } },
                         orderBy,
-                        skip,
-                        take,
                     });
                 } else {
                     otherReviews = await context.prisma.review.findMany({
                         where,
                         orderBy,
-                        skip,
-                        take,
                     });
                 }
 
-                // let reviews = await context.prisma.review.findMany({
-                //     where,
-                //     orderBy,
-                // });
-                const reviews = [...userReviews, ...otherReviews];
+                let reviews = [...userReviews, ...otherReviews];
+
+                if (take) {
+                    reviews = reviews.slice(skip, skip + take);
+                }
+
                 return reviews;
             }
             catch (error) {
