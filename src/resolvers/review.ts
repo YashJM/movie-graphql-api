@@ -9,11 +9,11 @@ export const reviewResolver = {
                 let where = {
                     movieId
                 };
-                
+
                 const user = context.user;
 
                 if (filter) {
-                    where = { ...filter };
+                    where = { ...where, ...filter };
                 }
 
                 let orderBy = {};
@@ -28,13 +28,35 @@ export const reviewResolver = {
                     take = pagination.take || take;
                 }
 
-                const reviews = await context.prisma.review.findMany({
-                    where,
-                    orderBy,
-                    skip,
-                    take,
-                });
+                let userReviews = [] as any;
+                let otherReviews = [] as any;
 
+                if (user) {
+                    userReviews = await context.prisma.review.findMany({
+                        where: { ...where, userId: user.id },
+                        orderBy,
+                    });
+
+                    otherReviews = await context.prisma.review.findMany({
+                        where: { ...where, NOT: { userId: user.id } },
+                        orderBy,
+                        skip,
+                        take,
+                    });
+                } else {
+                    otherReviews = await context.prisma.review.findMany({
+                        where,
+                        orderBy,
+                        skip,
+                        take,
+                    });
+                }
+
+                // let reviews = await context.prisma.review.findMany({
+                //     where,
+                //     orderBy,
+                // });
+                const reviews = [...userReviews, ...otherReviews];
                 return reviews;
             }
             catch (error) {
